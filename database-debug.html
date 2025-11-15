@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库连接诊断 - PawPals</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: #2c3e50;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .test-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .status.pending {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status.error {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+        
+        .solution {
+            background: #e8f4fd;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .solution h4 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        
+        .button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background 0.3s;
+        }
+        
+        .button:hover {
+            background: #2980b9;
+        }
+        
+        .button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .summary {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 30px;
+        }
+        
+        .summary h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 数据库连接诊断</h1>
+            <p>PawPals 数据库连接问题诊断工具</p>
+        </div>
+        
+        <div class="content">
+            <div class="test-section">
+                <h3>
+                    <span>1. 网络连接测试</span>
+                    <span id="networkStatus" class="status pending">等待测试</span>
+                </h3>
+                <p>测试与Supabase服务器的网络连接...</p>
+                <div id="networkLog" class="log"></div>
+                <div id="networkSolution" class="solution" style="display: none;"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>
+                    <span>2. API密钥验证</span>
+                    <span id="apiStatus" class="status pending">等待测试</span>
+                </h3>
+                <p>验证Supabase API密钥是否正确...</p>
+                <div id="apiLog" class="log"></div>
+                <div id="apiSolution" class="solution" style="display: none;"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>
+                    <span>3. 数据库表检查</span>
+                    <span id="tableStatus" class="status pending">等待测试</span>
+                </h3>
+                <p>检查必要的数据库表是否存在...</p>
+                <div id="tableLog" class="log"></div>
+                <div id="tableSolution" class="solution" style="display: none;"></div>
+            </div>
+            
+            <div class="test-section">
+                <h3>
+                    <span>4. RLS策略检查</span>
+                    <span id="rlsStatus" class="status pending">等待测试</span>
+                </h3>
+                <p>检查行级安全策略设置...</p>
+                <div id="rlsLog" class="log"></div>
+                <div id="rlsSolution" class="solution" style="display: none;"></div>
+            </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <button id="runTests" class="button">🚀 开始诊断</button>
+                <button id="fixAll" class="button" style="background: #27ae60; display: none; margin-left: 15px;">🔧 自动修复</button>
+            </div>
+            
+            <div class="summary">
+                <h3>诊断摘要</h3>
+                <div id="summaryContent">
+                    <div class="summary-item">
+                        <span>总测试项：</span>
+                        <span id="totalTests">4</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>通过：</span>
+                        <span id="passedTests">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>失败：</span>
+                        <span id="failedTests">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>总体状态：</span>
+                        <span id="overallStatus" style="font-weight: bold;">未开始</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase配置
+        const SUPABASE_URL = 'https://aiigtntikyxqqqsmqidj.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFpaWd0bnRpa3l4cXFxc21xaWRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI0OTkyMTUsImV4cCI6MjA3ODA3NTIxNX0.MSwn6jJw-6WHplhEfe2JejM6aAVH_lmdnqhVWkkWLMQ';
+        
+        let supabaseClient = null;
+        let testResults = {
+            network: { status: 'pending', message: '' },
+            api: { status: 'pending', message: '' },
+            tables: { status: 'pending', message: '' },
+            rls: { status: 'pending', message: '' }
+        };
+        
+        // 更新测试状态
+        function updateTestStatus(testName, status, message = '') {
+            testResults[testName].status = status;
+            testResults[testName].message = message;
+            
+            // 更新UI
+            const statusElement = document.getElementById(testName + 'Status');
+            const logElement = document.getElementById(testName + 'Log');
+            const solutionElement = document.getElementById(testName + 'Solution');
+            
+            statusElement.textContent = {
+                pending: '等待测试',
+                success: '✓ 通过',
+                error: '✗ 失败'
+            }[status];
+            
+            statusElement.className = 'status ' + status;
+            
+            if (message) {
+                logElement.innerHTML = message;
+            }
+            
+            if (status === 'error') {
+                solutionElement.style.display = 'block';
+                solutionElement.innerHTML = getSolution(testName);
+            }
+            
+            updateSummary();
+        }
+        
+        // 获取解决方案
+        function getSolution(testName) {
+            const solutions = {
+                network: `
+                    <h4>网络连接问题解决方案</h4>
+                    <p><strong>问题诊断：</strong>无法连接到Supabase服务器</p>
+                    <p><strong>解决方案：</strong></p>
+                    <ol>
+                        <li>检查网络连接是否正常</li>
+                        <li>检查防火墙设置</li>
+                        <li>尝试使用其他网络环境</li>
+                        <li>确认Supabase服务状态</li>
+                    </ol>
+                `,
+                api: `
+                    <h4>API密钥问题解决方案</h4>
+                    <p><strong>问题诊断：</strong>API密钥验证失败</p>
+                    <p><strong>解决方案：</strong></p>
+                    <ol>
+                        <li>检查Supabase URL是否正确</li>
+                        <li>检查API密钥是否过期</li>
+                        <li>在Supabase仪表板中重新生成密钥</li>
+                        <li>确认项目设置中的API权限</li>
+                    </ol>
+                `,
+                tables: `
+                    <h4>数据库表问题解决方案</h4>
+                    <p><strong>问题诊断：</strong>必要的数据库表不存在</p>
+                    <p><strong>解决方案：</strong></p>
+                    <p>在Supabase SQL编辑器中运行以下SQL：</p>
+                    <pre style="background: #2c3e50; color: white; padding: 10px; border-radius: 5px; overflow-x: auto;">
+-- 创建基础表结构
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    auth_id UUID UNIQUE,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    display_name VARCHAR(50),
+    avatar_color CHAR(7) DEFAULT '#4CAF50',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    pet_id BIGINT,
+    content TEXT NOT NULL,
+    location VARCHAR(100),
+    tags TEXT,
+    is_public BOOLEAN DEFAULT TRUE,
+    like_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+                    </pre>
+                `,
+                rls: `
+                    <h4>RLS策略问题解决方案</h4>
+                    <p><strong>问题诊断：</strong>行级安全策略限制访问</p>
+                    <p><strong>解决方案：</strong></p>
+                    <p>在Supabase SQL编辑器中运行以下SQL：</p>
+                    <pre style="background: #2c3e50; color: white; padding: 10px; border-radius: 5px; overflow-x: auto;">
+-- 启用RLS并设置策略
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
+-- 允许任何人读取公开数据
+CREATE POLICY "允许任何人读取用户数据" ON users
+    FOR SELECT USING (true);
+
+CREATE POLICY "允许任何人读取公开动态" ON posts
+    FOR SELECT USING (is_public = true);
+
+-- 允许已认证用户插入数据
+CREATE POLICY "允许认证用户插入数据" ON users
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+
+CREATE POLICY "允许认证用户发布动态" ON posts
+    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+                    </pre>
+                `
+            };
+            
+            return solutions[testName] || '<p>未知问题，请联系技术支持</p>';
+        }
+        
+        // 更新摘要
+        function updateSummary() {
+            const total = Object.keys(testResults).length;
+            const passed = Object.values(testResults).filter(r => r.status === 'success').length;
+            const failed = Object.values(testResults).filter(r => r.status === 'error').length;
+            
+            document.getElementById('totalTests').textContent = total;
+            document.getElementById('passedTests').textContent = passed;
+            document.getElementById('failedTests').textContent = failed;
+            
+            const overallStatus = document.getElementById('overallStatus');
+            if (failed > 0) {
+                overallStatus.textContent = '❌ 存在连接问题';
+                overallStatus.style.color = '#dc3545';
+                document.getElementById('fixAll').style.display = 'inline-block';
+            } else if (passed === total) {
+                overallStatus.textContent = '✅ 所有测试通过';
+                overallStatus.style.color = '#28a745';
+            } else {
+                overallStatus.textContent = '⏳ 测试进行中';
+                overallStatus.style.color = '#ffc107';
+            }
+        }
+        
+        // 测试网络连接
+        async function testNetwork() {
+            updateTestStatus('network', 'pending', '正在测试网络连接...');
+            
+            try {
+                const response = await fetch(SUPABASE_URL + '/rest/v1/', {
+                    method: 'HEAD',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    updateTestStatus('network', 'success', '✅ 网络连接正常\n状态码: ' + response.status);
+                    return true;
+                } else {
+                    updateTestStatus('network', 'error', '❌ 网络连接失败\n状态码: ' + response.status);
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus('network', 'error', '❌ 网络连接异常: ' + error.message);
+                return false;
+            }
+        }
+        
+        // 测试API密钥
+        async function testAPI() {
+            updateTestStatus('api', 'pending', '正在验证API密钥...');
+            
+            try {
+                const { createClient } = supabase;
+                supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                // 测试认证连接
+                const { data, error } = await supabaseClient.auth.getSession();
+                
+                if (!error) {
+                    updateTestStatus('api', 'success', '✅ API密钥验证成功');
+                    return true;
+                } else {
+                    updateTestStatus('api', 'error', '❌ API密钥验证失败: ' + error.message);
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus('api', 'error', '❌ API密钥验证异常: ' + error.message);
+                return false;
+            }
+        }
+        
+        // 测试数据库表
+        async function testTables() {
+            updateTestStatus('tables', 'pending', '正在检查数据库表...');
+            
+            try {
+                // 测试users表
+                const { data: users, error: usersError } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .limit(1);
+                
+                if (usersError && usersError.code === 'PGRST116') {
+                    updateTestStatus('tables', 'error', '❌ users表不存在');
+                    return false;
+                }
+                
+                // 测试posts表
+                const { data: posts, error: postsError } = await supabaseClient
+                    .from('posts')
+                    .select('id')
+                    .limit(1);
+                
+                if (postsError && postsError.code === 'PGRST116') {
+                    updateTestStatus('tables', 'error', '❌ posts表不存在');
+                    return false;
+                }
+                
+                updateTestStatus('tables', 'success', '✅ 所有必要的数据库表都存在');
+                return true;
+            } catch (error) {
+                updateTestStatus('tables', 'error', '❌ 数据库表检查异常: ' + error.message);
+                return false;
+            }
+        }
+        
+        // 测试RLS策略
+        async function testRLS() {
+            updateTestStatus('rls', 'pending', '正在检查RLS策略...');
+            
+            try {
+                // 尝试插入测试数据（应该会被RLS阻止）
+                const { error } = await supabaseClient
+                    .from('users')
+                    .insert({
+                        username: 'test_user_' + Date.now(),
+                        email: 'test@example.com',
+                        display_name: '测试用户'
+                    });
+                
+                // 如果出现权限错误，说明RLS已启用但策略可能需要调整
+                if (error && error.code === '42501') {
+                    updateTestStatus('rls', 'success', '✅ RLS策略已启用（权限错误是预期的）');
+                    return true;
+                } else if (error) {
+                    updateTestStatus('rls', 'error', '❌ RLS策略检查失败: ' + error.message);
+                    return false;
+                } else {
+                    updateTestStatus('rls', 'error', '❌ RLS可能未正确配置（允许了匿名插入）');
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus('rls', 'error', '❌ RLS策略检查异常: ' + error.message);
+                return false;
+            }
+        }
+        
+        // 运行所有测试
+        async function runAllTests() {
+            const runTestsBtn = document.getElementById('runTests');
+            runTestsBtn.disabled = true;
+            runTestsBtn.textContent = '测试中...';
+            
+            // 重置所有测试状态
+            Object.keys(testResults).forEach(test => {
+                updateTestStatus(test, 'pending', '');
+            });
+            
+            // 按顺序运行测试
+            const networkOk = await testNetwork();
+            if (!networkOk) {
+                runTestsBtn.disabled = false;
+                runTestsBtn.textContent = '重新测试';
+                return;
+            }
+            
+            const apiOk = await testAPI();
+            if (!apiOk) {
+                runTestsBtn.disabled = false;
+                runTestsBtn.textContent = '重新测试';
+                return;
+            }
+            
+            const tablesOk = await testTables();
+            if (!tablesOk) {
+                runTestsBtn.disabled = false;
+                runTestsBtn.textContent = '重新测试';
+                return;
+            }
+            
+            await testRLS();
+            
+            runTestsBtn.disabled = false;
+            runTestsBtn.textContent = '重新测试';
+        }
+        
+        // 自动修复功能
+        function autoFix() {
+            alert('自动修复功能需要手动在Supabase仪表板中执行SQL语句。请查看每个测试项的解决方案部分，复制相应的SQL代码到Supabase SQL编辑器中执行。');
+        }
+        
+        // 事件监听器
+        document.getElementById('runTests').addEventListener('click', runAllTests);
+        document.getElementById('fixAll').addEventListener('click', autoFix);
+        
+        // 初始化
+        updateSummary();
+    </script>
+</body>
+</html>

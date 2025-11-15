@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - PawPals</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- 引入Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body class="auth-body">
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-paw"></i>
+                <span>PawPals</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
+                <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
+                <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-search"></i> 服务查询</a></li>
+                <li><a href="auth.html" class="nav-link active"><i class="fas fa-user"></i> 登录/注册</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 认证页面主内容 -->
+    <main class="auth-container">
+        <div class="container">
+            <div class="auth-card">
+                <!-- 标签切换 -->
+                <div class="auth-tabs">
+                    <button class="tab-btn active" data-tab="login">登录</button>
+                    <button class="tab-btn" data-tab="register">注册</button>
+                </div>
+
+                <!-- 登录表单 -->
+                <div class="tab-content active" id="loginTab">
+                    <h2>欢迎回来</h2>
+                    <p class="auth-subtitle">登录您的PawPals账户</p>
+                    
+                    <form class="auth-form" id="loginForm">
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" id="loginEmail" placeholder="邮箱地址" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="loginPassword" placeholder="密码" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe">
+                                <span class="checkmark"></span>
+                                记住我
+                            </label>
+                            <a href="#" class="forgot-password">忘记密码？</a>
+                        </div>
+                        
+                        <button type="submit" class="auth-btn primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            登录
+                        </button>
+                    </form>
+                    
+                    <div class="auth-divider">
+                        <span>或</span>
+                    </div>
+                    
+                    <div class="social-login">
+                        <button class="social-btn wechat">
+                            <i class="fab fa-weixin"></i>
+                            微信登录
+                        </button>
+                        <button class="social-btn qq">
+                            <i class="fab fa-qq"></i>
+                            QQ登录
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 注册表单 -->
+                <div class="tab-content" id="registerTab">
+                    <h2>创建账户</h2>
+                    <p class="auth-subtitle">加入PawPals宠物社区</p>
+                    
+                    <form class="auth-form" id="registerForm">
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-user"></i>
+                                <input type="text" id="registerName" placeholder="用户名" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" id="registerEmail" placeholder="邮箱地址" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="registerPassword" placeholder="密码" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="input-with-icon">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" id="confirmPassword" placeholder="确认密码" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-options">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="agreeTerms" required>
+                                <span class="checkmark"></span>
+                                我已阅读并同意 <a href="#" class="terms-link">服务条款</a> 和 <a href="#" class="terms-link">隐私政策</a>
+                            </label>
+                        </div>
+                        
+                        <button type="submit" class="auth-btn secondary">
+                            <i class="fas fa-user-plus"></i>
+                            注册
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>PawPals 致力于为宠物主人提供全方位的社交和服务平台</p>
+                </div>
+                <div class="footer-section">
+                    <h3>联系方式</h3>
+                    <p>邮箱：contact@pawpals.com</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-section">
+                    <h3>隐私政策</h3>
+                    <p>我们严格保护用户隐私，确保信息安全</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PawPals. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 引入Supabase配置和功能 -->
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+    <script>
+        // 等待数据库连接完成的函数
+        async function waitForDatabaseConnection(maxWaitTime = 5000) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                const checkConnection = () => {
+                    if (window.supabaseClient && window.databaseInitialized) {
+                        console.log('数据库连接已就绪');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    if (Date.now() - startTime > maxWaitTime) {
+                        console.warn('等待数据库连接超时，将使用基础功能');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(checkConnection, 100);
+                };
+                
+                checkConnection();
+            });
+        }
+        
+        // 认证页面特定功能
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 首先调用Supabase初始化
+            await initPageSupabase();
+            
+            // 等待数据库连接完成
+            const dbReady = await waitForDatabaseConnection();
+            
+            if (!dbReady) {
+                console.log('数据库连接失败，将使用基础功能');
+            }
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContents = document.querySelectorAll('.tab-content');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            // 标签切换功能
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // 移除所有激活状态
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // 添加当前激活状态
+                    this.classList.add('active');
+                    document.getElementById(tabId + 'Tab').classList.add('active');
+                });
+            });
+
+            // 登录表单提交
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                
+                const errors = PawPals.validateForm({
+                    email: email,
+                    password: password
+                });
+                
+                if (errors.length > 0) {
+                    PawPals.showToast(errors[0]);
+                    return;
+                }
+                
+                // 禁用按钮显示加载状态
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登录中...';
+                
+                try {
+                    const result = await SupabaseAuth.signIn(email, password);
+                    
+                    if (result.success) {
+                        PawPals.showToast('登录成功！正在跳转...');
+                        setTimeout(() => {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    } else {
+                        PawPals.showToast(result.error || '登录失败，请重试');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登录';
+                    }
+                } catch (error) {
+                    console.error('登录异常:', error);
+                    PawPals.showToast('登录时发生错误，请重试');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> 登录';
+                }
+            });
+
+            // 注册表单提交
+            registerForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('registerName').value;
+                const email = document.getElementById('registerEmail').value;
+                const password = document.getElementById('registerPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                const submitBtn = this.querySelector('button[type="submit"]');
+                
+                const errors = PawPals.validateForm({
+                    email: email,
+                    password: password,
+                    confirmPassword: confirmPassword
+                });
+                
+                if (password !== confirmPassword) {
+                    PawPals.showToast('两次输入的密码不一致');
+                    return;
+                }
+                
+                if (!document.getElementById('agreeTerms').checked) {
+                    PawPals.showToast('请同意服务条款和隐私政策');
+                    return;
+                }
+                
+                if (errors.length > 0) {
+                    PawPals.showToast(errors[0]);
+                    return;
+                }
+                
+                // 禁用按钮显示加载状态
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 注册中...';
+                
+                try {
+                    const result = await SupabaseAuth.signUp(email, password, name);
+                    
+                    if (result.success) {
+                        if (result.data.user && result.data.user.identities && result.data.user.identities.length > 0) {
+                            // 直接注册成功
+                            PawPals.showToast('注册成功！请检查邮箱验证邮件后登录');
+                            setTimeout(() => {
+                                document.querySelector('[data-tab="login"]').click();
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> 注册';
+                            }, 2000);
+                        } else {
+                            // 需要邮箱验证
+                            PawPals.showToast('注册成功！请检查邮箱验证邮件');
+                            setTimeout(() => {
+                                document.querySelector('[data-tab="login"]').click();
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> 注册';
+                            }, 2000);
+                        }
+                    } else {
+                        PawPals.showToast(result.error || '注册失败，请重试');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> 注册';
+                    }
+                } catch (error) {
+                    console.error('注册异常:', error);
+                    PawPals.showToast('注册时发生错误，请重试');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-user-plus"></i> 注册';
+                }
+            });
+
+            // 社交登录按钮
+            const socialBtns = document.querySelectorAll('.social-btn');
+            socialBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const type = this.classList.contains('wechat') ? '微信' : 'QQ';
+                    PawPals.showToast(`${type}登录功能开发中...`);
+                });
+            });
+
+            // 忘记密码链接
+            const forgotPassword = document.querySelector('.forgot-password');
+            forgotPassword.addEventListener('click', function(e) {
+                e.preventDefault();
+                PawPals.showToast('密码重置功能开发中...');
+            });
+        });
+    </script>
+</body>
+</html>

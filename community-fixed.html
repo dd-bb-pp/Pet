@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同城动态 - PawPals</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- 加载Supabase库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 加载Supabase配置 -->
+    <script src="supabase-config.js"></script>
+</head>
+<body>
+    <!-- 数据库连接状态显示 -->
+    <div id="database-status" style="display: none;"></div>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-paw"></i>
+                <span>PawPals</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
+                <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
+                <li><a href="community-fixed.html" class="nav-link active"><i class="fas fa-users"></i> 同城动态</a></li>
+                <li><a href="#" class="nav-link"><i class="fas fa-search"></i> 服务查询</a></li>
+                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 同城动态主内容 -->
+    <main class="community-container">
+        <div class="container">
+            <!-- 动态列表 -->
+            <section class="feed-section">
+                <div class="feed-header">
+                    <h2>同城动态</h2>
+                    <button class="new-post-btn">
+                        <i class="fas fa-edit"></i>
+                        发布动态
+                    </button>
+                </div>
+                
+                <div class="feed-list" id="feed-list">
+                    <!-- 动态内容会动态加载到这里 -->
+                    <div id="loading-indicator" style="text-align: center; padding: 50px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: #4CAF50;"></i>
+                        <p>正在加载动态...</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 发布动态模态框 -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>发布动态</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="postForm">
+                    <div class="form-group">
+                        <label for="postContent">动态内容</label>
+                        <textarea id="postContent" placeholder="分享你的宠物日常..." rows="5"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">地理位置</label>
+                        <input type="text" id="location" placeholder="选择或输入位置">
+                    </div>
+                    <div class="form-group">
+                        <label>宠物标签</label>
+                        <div class="tags-input">
+                            <input type="text" id="tagInput" placeholder="输入标签，按回车添加">
+                            <div class="selected-tags" id="selected-tags"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" type="button">取消</button>
+                <button class="submit-btn" type="button">发布</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>PawPals 致力于为宠物主人提供全方位的社交和服务平台</p>
+                </div>
+                <div class="footer-section">
+                    <h3>联系方式</h3>
+                    <p>邮箱：contact@pawpals.com</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-section">
+                    <h3>隐私政策</h3>
+                    <p>我们严格保护用户隐私，确保信息安全</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PawPals. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 全局变量
+        let selectedTags = [];
+
+        // 显示Toast消息
+        function showToast(message, type = 'success') {
+            // 移除现有的提示
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // 创建新的提示
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'error' ? '#f44336' : '#4CAF50'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 4px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 更新已选标签显示
+        function updateSelectedTags() {
+            const container = document.getElementById('selected-tags');
+            if (container) {
+                container.innerHTML = selectedTags.map(tag => 
+                    `<span class="tag">#${tag}<i class="fas fa-times" onclick="removeTag('${tag}')"></i></span>`
+                ).join('');
+            }
+        }
+
+        // 移除标签
+        function removeTag(tag) {
+            selectedTags = selectedTags.filter(t => t !== tag);
+            updateSelectedTags();
+        }
+
+        // 从数据库加载动态列表
+        async function loadPostsFromDatabase() {
+            try {
+                console.log('开始从数据库加载动态...');
+                
+                if (!window.supabaseClient) {
+                    console.error('数据库未连接');
+                    showToast('数据库连接失败，显示示例动态', 'error');
+                    showDefaultPosts();
+                    return false;
+                }
+                
+                const { data: posts, error } = await window.supabaseClient
+                    .from('posts')
+                    .select(`
+                        *,
+                        users(username, display_name, avatar_color),
+                        pets(name, pet_type, avatar_color)
+                    `)
+                    .eq('is_public', true)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+                
+                if (error) {
+                    console.error('加载动态失败:', error);
+                    showToast('加载动态失败，显示示例动态', 'error');
+                    showDefaultPosts();
+                    return false;
+                }
+                
+                console.log('从数据库加载到的动态:', posts);
+                
+                // 清空现有动态列表
+                const feedList = document.getElementById('feed-list');
+                
+                if (posts && posts.length > 0) {
+                    feedList.innerHTML = '';
+                    posts.forEach(post => {
+                        const postElement = createPostElement(post);
+                        feedList.appendChild(postElement);
+                    });
+                    console.log('动态列表已更新');
+                    showToast(`成功加载 ${posts.length} 条动态`);
+                } else {
+                    console.log('没有找到动态数据');
+                    showDefaultPosts();
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('加载动态时发生异常:', error);
+                showToast('加载动态时出错，显示示例动态', 'error');
+                showDefaultPosts();
+                return false;
+            }
+        }
+        
+        // 创建动态元素
+        function createPostElement(post) {
+            const newPost = document.createElement('div');
+            newPost.className = 'feed-item';
+            
+            // 解析tags
+            const tags = post.tags ? post.tags.split(',').filter(tag => tag.trim()) : [];
+            
+            // 格式化时间
+            const postTime = formatPostTime(post.created_at);
+            
+            // 获取用户信息
+            const userInfo = post.users || {};
+            const petInfo = post.pets || {};
+            
+            newPost.innerHTML = `
+                <div class="post-header">
+                    <div class="user-info">
+                        <div class="avatar" style="background-color: ${userInfo.avatar_color || '#4CAF50'};">${userInfo.display_name?.charAt(0) || '我'}</div>
+                        <div class="user-details">
+                            <span class="username">${userInfo.display_name || '我'}</span>
+                            <span class="pet-name">${petInfo.name ? petInfo.name + ' · ' + petInfo.pet_type : '我的宠物'}</span>
+                        </div>
+                    </div>
+                    <span class="post-time">${postTime}</span>
+                </div>
+                
+                <div class="post-content">
+                    <p>${post.content}</p>
+                    <div class="post-tags">
+                        ${tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+                
+                <div class="post-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> ${post.location || '未知位置'}</span>
+                    <span><i class="fas fa-comments"></i> ${post.comment_count || 0}条评论</span>
+                </div>
+                
+                <div class="post-actions">
+                    <button class="action-btn like-btn">
+                        <i class="far fa-heart"></i>
+                        <span>${post.like_count || 0}</span>
+                    </button>
+                    <button class="action-btn comment-btn">
+                        <i class="far fa-comment"></i>
+                        评论
+                    </button>
+                    <button class="action-btn share-btn">
+                        <i class="fas fa-share"></i>
+                        分享
+                    </button>
+                </div>
+            `;
+            
+            return newPost;
+        }
+        
+        // 格式化时间
+        function formatPostTime(timestamp) {
+            if (!timestamp) return '刚刚';
+            
+            const now = new Date();
+            const postTime = new Date(timestamp);
+            const diffMs = now - postTime;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 1) return '刚刚';
+            if (diffMins < 60) return `${diffMins}分钟前`;
+            if (diffHours < 24) return `${diffHours}小时前`;
+            if (diffDays < 7) return `${diffDays}天前`;
+            
+            return postTime.toLocaleDateString('zh-CN');
+        }
+        
+        // 显示默认的静态动态
+        function showDefaultPosts() {
+            const feedList = document.getElementById('feed-list');
+            if (feedList) {
+                feedList.innerHTML = `
+                    <div class="feed-item">
+                        <div class="post-header">
+                            <div class="user-info">
+                                <div class="avatar">C</div>
+                                <div class="user-details">
+                                    <span class="username">陈小喵</span>
+                                    <span class="pet-name">金毛·多多</span>
+                                </div>
+                            </div>
+                            <span class="post-time">2小时前</span>
+                        </div>
+                        
+                        <div class="post-content">
+                            <p>今天带多多去公园散步，遇到了好多小伙伴，玩得可开心了！多多特别喜欢跟其他狗狗一起追逐玩耍，跑得满身是汗。</p>
+                            <div class="post-tags">
+                                <span class="tag">#活泼</span>
+                                <span class="tag">#社交</span>
+                                <span class="tag">#户外</span>
+                            </div>
+                        </div>
+                        
+                        <div class="post-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> 上海市中心公园</span>
+                            <span><i class="fas fa-comments"></i> 8条评论</span>
+                        </div>
+                        
+                        <div class="post-actions">
+                            <button class="action-btn like-btn">
+                                <i class="far fa-heart"></i>
+                                <span>23</span>
+                            </button>
+                            <button class="action-btn comment-btn">
+                                <i class="far fa-comment"></i>
+                                评论
+                            </button>
+                            <button class="action-btn share-btn">
+                                <i class="fas fa-share"></i>
+                                分享
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 保存动态到数据库
+        async function savePostToDatabase(content, location, tags) {
+            try {
+                console.log('开始保存动态到数据库...');
+                
+                if (!window.supabaseClient) {
+                    console.error('Supabase客户端未初始化');
+                    showToast('数据库连接失败，请刷新页面重试', 'error');
+                    return false;
+                }
+
+                // 构建动态数据
+                const postData = {
+                    content: content,
+                    location: location || '未知位置',
+                    tags: tags.join(',') || '',
+                    is_public: true,
+                    like_count: 0,
+                    comment_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('准备保存的动态数据:', postData);
+
+                // 保存到数据库
+                const { data, error } = await window.supabaseClient
+                    .from('posts')
+                    .insert([postData])
+                    .select();
+
+                if (error) {
+                    console.error('保存动态失败:', error);
+                    showToast('动态发布失败: ' + error.message, 'error');
+                    return false;
+                }
+
+                console.log('动态保存成功:', data);
+                return true;
+            } catch (error) {
+                console.error('保存动态时发生异常:', error);
+                showToast('发布动态时发生异常: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // 等待数据库连接完成的函数
+        async function waitForDatabaseConnection(maxWaitTime = 5000) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                const checkConnection = () => {
+                    if (window.supabaseClient && window.databaseInitialized) {
+                        console.log('数据库连接已就绪');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    const currentTime = Date.now();
+                    if (currentTime - startTime > maxWaitTime) {
+                        console.warn('数据库连接超时');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(checkConnection, 100);
+                };
+                
+                checkConnection();
+            });
+        }
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('开始初始化同城动态页面...');
+            
+            // 初始化标签输入
+            const tagInput = document.getElementById('tagInput');
+            if (tagInput) {
+                tagInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tag = this.value.trim();
+                        if (tag && selectedTags.length < 5) {
+                            selectedTags.push(tag);
+                            this.value = '';
+                            updateSelectedTags();
+                        }
+                    }
+                });
+            }
+
+            // 初始化模态框控制
+            const newPostBtn = document.querySelector('.new-post-btn');
+            const modal = document.getElementById('postModal');
+            const closeBtn = document.querySelector('.close-btn');
+            const cancelBtn = document.querySelector('.cancel-btn');
+            const submitBtn = document.querySelector('.submit-btn');
+
+            if (newPostBtn) {
+                newPostBtn.addEventListener('click', function() {
+                    modal.style.display = 'block';
+                });
+            }
+
+            function closeModal() {
+                if (modal) modal.style.display = 'none';
+                const postForm = document.getElementById('postForm');
+                if (postForm) postForm.reset();
+                selectedTags = [];
+                updateSelectedTags();
+            }
+
+            if (closeBtn) closeBtn.addEventListener('click', closeModal);
+            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // 发布动态
+            if (submitBtn) {
+                submitBtn.addEventListener('click', async function() {
+                    const content = document.getElementById('postContent').value;
+                    const location = document.getElementById('location').value;
+                    if (!content.trim()) {
+                        showToast('请输入动态内容', 'error');
+                        return;
+                    }
+                    
+                    // 添加加载状态
+                    const originalText = submitBtn.textContent;
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '发布中...';
+                    
+                    try {
+                        // 保存到数据库
+                        const success = await savePostToDatabase(content, location, selectedTags);
+                        
+                        if (success) {
+                            showToast('动态发布成功！');
+                            // 重新加载动态列表
+                            await loadPostsFromDatabase();
+                            closeModal();
+                        }
+                    } catch (error) {
+                        console.error('发布动态时发生异常:', error);
+                        showToast('发布动态时发生异常: ' + error.message, 'error');
+                    } finally {
+                        // 恢复按钮状态
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                });
+            }
+
+            // 等待数据库连接完成
+            const dbReady = await waitForDatabaseConnection();
+            
+            if (!dbReady) {
+                console.warn('数据库连接失败，使用模拟数据');
+                showToast('数据库连接失败，显示示例动态', 'error');
+                showDefaultPosts();
+            } else {
+                // 数据库连接成功，从数据库加载动态
+                await loadPostsFromDatabase();
+            }
+            
+            console.log('同城动态页面初始化完成');
+        });
+    </script>
+</body>
+</html>

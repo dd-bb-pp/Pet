@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>同城动态 - PawPals</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- 加载Supabase库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- 加载Supabase配置 -->
+    <script src="supabase-config.js"></script>
+</head>
+<body>
+    <!-- 数据库连接状态显示 -->
+    <div id="database-status" style="display: none;"></div>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-paw"></i>
+                <span>PawPals</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
+                <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
+                <li><a href="community.html" class="nav-link active"><i class="fas fa-users"></i> 同城动态</a></li>
+                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 同城动态主内容 -->
+    <main class="community-container">
+        <div class="container">
+
+
+            <!-- 动态列表 -->
+            <section class="feed-section">
+                <div class="feed-header">
+                    <h2>同城动态</h2>
+                    <button class="new-post-btn">
+                        <i class="fas fa-edit"></i>
+                        发布动态
+                    </button>
+                </div>
+                
+                <div class="feed-list">
+                    <!-- 动态内容将从数据库动态加载 -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 发布动态模态框 -->
+    <div class="modal" id="postModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>发布动态</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="postForm">
+                    <div class="form-group">
+                        <label for="postContent">动态内容</label>
+                        <textarea id="postContent" placeholder="分享你的宠物日常..." rows="5"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">地理位置</label>
+                        <input type="text" id="location" placeholder="选择或输入位置">
+                    </div>
+                    <div class="form-group">
+                        <label>宠物标签</label>
+                        <div class="tags-input">
+                            <input type="text" id="tagInput" placeholder="输入标签，按回车添加">
+                            <div class="selected-tags"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn">取消</button>
+                <button class="submit-btn">发布</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>PawPals 致力于为宠物主人提供全方位的社交和服务平台</p>
+                </div>
+                <div class="footer-section">
+                    <h3>联系方式</h3>
+                    <p>邮箱：contact@pawpals.com</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-section">
+                    <h3>隐私政策</h3>
+                    <p>我们严格保护用户隐私，确保信息安全</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PawPals. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // 如果PawPals对象不存在，创建本地的showToast函数
+        if (typeof PawPals === 'undefined') {
+            window.PawPals = {
+                showToast: function(message) {
+                    // 移除现有的提示
+                    const existingToast = document.querySelector('.toast');
+                    if (existingToast) {
+                        existingToast.remove();
+                    }
+                    
+                    // 创建新的提示
+                    const toast = document.createElement('div');
+                    toast.className = 'toast';
+                    toast.textContent = message;
+                    toast.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #4CAF50;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 4px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        animation: slideIn 0.3s ease;
+                    `;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // 3秒后自动移除
+                    setTimeout(() => {
+                        toast.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            if (toast.parentNode) {
+                                toast.remove();
+                            }
+                        }, 300);
+                    }, 3000);
+                }
+            };
+        }
+        // 如果PawPals对象不存在，创建本地的showToast函数
+        if (typeof PawPals === 'undefined') {
+            window.PawPals = {
+                showToast: function(message) {
+                    // 移除现有的提示
+                    const existingToast = document.querySelector('.toast');
+                    if (existingToast) {
+                        existingToast.remove();
+                    }
+                    
+                    // 创建新的提示
+                    const toast = document.createElement('div');
+                    toast.className = 'toast';
+                    toast.textContent = message;
+                    toast.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: #4CAF50;
+                        color: white;
+                        padding: 12px 20px;
+                        border-radius: 4px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        z-index: 10000;
+                        animation: slideIn 0.3s ease;
+                    `;
+                    
+                    document.body.appendChild(toast);
+                    
+                    // 3秒后自动移除
+                    setTimeout(() => {
+                        toast.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => {
+                            if (toast.parentNode) {
+                                toast.remove();
+                            }
+                        }, 300);
+                    }, 3000);
+                }
+            };
+        }
+        // 添加新动态到列表
+        function addNewPost(content, location, tags) {
+            const feedList = document.querySelector('.feed-list');
+            const newPost = document.createElement('div');
+            newPost.className = 'feed-item';
+            newPost.innerHTML = `
+                <div class="post-header">
+                    <div class="user-info">
+                        <div class="avatar">我</div>
+                        <div class="user-details">
+                            <span class="username">我</span>
+                            <span class="pet-name">我的宠物</span>
+                        </div>
+                    </div>
+                    <span class="post-time">刚刚</span>
+                </div>
+                
+                <div class="post-content">
+                    <p>${content}</p>
+                    <div class="post-tags">
+                        ${tags.map(tag => `<span class="tag">#${tag}</span>`).join('')}
+                    </div>
+                </div>
+                
+                <div class="post-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> ${location || '未知位置'}</span>
+                    <span><i class="fas fa-comments"></i> 0条评论</span>
+                </div>
+                
+                <div class="post-actions">
+                    <!-- 已移除点赞、评论和分享功能 -->
+                </div>
+            `;
+            
+            feedList.insertBefore(newPost, feedList.firstChild);
+            PawPals.showToast('动态已添加到列表顶部');
+        }
+
+        // 显示动态详情模态框
+        function showPostDetailModal(postItem) {
+            const username = postItem.querySelector('.username').textContent;
+            const petName = postItem.querySelector('.pet-name').textContent;
+            const content = postItem.querySelector('.post-content p').textContent;
+            const location = postItem.querySelector('.post-meta span:first-child').textContent;
+            const time = postItem.querySelector('.post-time').textContent;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="user-info">
+                            <div class="avatar">${username.charAt(0)}</div>
+                            <div>
+                                <h3>${username}</h3>
+                                <!-- 已移除宠物名称 -->
+                            </div>
+                        </div>
+                        <button class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p style="line-height: 1.6; margin-bottom: 15px;">${content}</p>
+                        <div class="post-meta">
+                            <span>${location}</span>
+                            <span>${time}</span>
+                        </div>
+                        <div class="post-tags">
+                            ${Array.from(postItem.querySelectorAll('.tag')).map(tag => tag.outerHTML).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="close-btn">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+            
+            // 关闭功能
+            const closeBtns = modal.querySelectorAll('.close-btn');
+            closeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            });
+            
+            // 点击外部关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // 保存动态到数据库
+        async function savePostToDatabase(content, location, tags) {
+            try {
+                console.log('开始保存动态到数据库...');
+                
+                // 检查是否已初始化Supabase
+                if (!window.supabaseClient) {
+                    console.error('Supabase客户端未初始化');
+                    PawPals.showToast('数据库连接失败，请刷新页面重试');
+                    return false;
+                }
+
+                // 获取当前用户信息
+                const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+                if (authError) {
+                    console.error('获取用户认证信息失败:', authError);
+                    PawPals.showToast('请先登录后再发布动态');
+                    return false;
+                }
+                
+                if (!user) {
+                    console.error('用户未登录');
+                    PawPals.showToast('请先登录后再发布动态');
+                    return false;
+                }
+
+                console.log('当前用户:', user);
+
+                // 创建用户记录（如果不存在）
+                let userId = null;
+                try {
+                    // 首先尝试查找用户
+                    const { data: userData, error: userError } = await supabaseClient
+                        .from('users')
+                        .select('id')
+                        .eq('auth_id', user.id)
+                        .single();
+
+                    if (userError) {
+                        console.log('用户不存在，准备创建新用户记录');
+                        // 创建新用户记录
+                        const { data: newUser, error: createError } = await supabaseClient
+                            .from('users')
+                            .insert({
+                                auth_id: user.id,
+                                username: user.email?.split('@')[0] || '新用户',
+                                email: user.email,
+                                display_name: user.email?.split('@')[0] || '新用户',
+                                avatar_color: '#4CAF50',
+                                is_active: true,
+                                created_at: new Date().toISOString(),
+                                updated_at: new Date().toISOString()
+                            })
+                            .select('id')
+                            .single();
+
+                        if (createError) {
+                            console.error('创建用户记录失败:', createError);
+                            console.log('将直接使用auth_id作为用户ID');
+                            userId = user.id; // 使用auth_id作为备用方案
+                        } else {
+                            userId = newUser.id;
+                            console.log('用户记录创建成功，用户ID:', userId);
+                        }
+                    } else {
+                        userId = userData.id;
+                        console.log('找到现有用户，用户ID:', userId);
+                    }
+                } catch (error) {
+                    console.error('处理用户信息时发生错误:', error);
+                    userId = user.id; // 使用auth_id作为备用方案
+                }
+
+                if (!userId) {
+                    console.error('无法获取用户ID');
+                    PawPals.showToast('用户信息获取失败');
+                    return false;
+                }
+
+                // 已移除宠物关联功能
+
+                // 构建动态数据
+                const postData = {
+                    user_id: userId,
+                    content: content,
+                    location: location || '未知位置',
+                    tags: tags.join(',') || '',
+                    is_public: true,
+                    like_count: 0,
+                    comment_count: 0,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+
+                console.log('准备保存的动态数据:', postData);
+
+                // 保存到数据库
+                const { data, error } = await supabaseClient
+                    .from('posts')
+                    .insert([postData])
+                    .select();
+
+                if (error) {
+                    console.error('保存动态失败:', error);
+                    
+                    // 提供详细的错误信息
+                    if (error.code === '42P01') {
+                        console.error('posts表不存在，请先创建数据库表');
+                        PawPals.showToast('数据库表未创建，请先运行数据库脚本');
+                        
+                        // 显示创建表的SQL
+                        console.log('请运行以下SQL语句创建posts表:');
+                        console.log(`
+CREATE TABLE IF NOT EXISTS posts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    location VARCHAR(100),
+    tags JSONB,
+    is_public BOOLEAN DEFAULT TRUE,
+    like_count INT DEFAULT 0,
+    comment_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+                        `);
+                    } else if (error.code === '42501') {
+                        console.error('权限不足，请检查RLS策略');
+                        PawPals.showToast('数据库权限不足，请检查设置');
+                    } else {
+                        PawPals.showToast('动态发布失败: ' + error.message);
+                    }
+                    
+                    return false;
+                }
+
+                console.log('动态保存成功:', data);
+                return true;
+            } catch (error) {
+                console.error('保存动态时发生异常:', error);
+                PawPals.showToast('发布动态时发生异常: ' + error.message);
+                return false;
+            }
+        }
+
+        // 用户个人资料模态框
+        async function showUserProfileModal(username) {
+            // 获取用户信息
+            let displayName = username;
+            let userAvatar = username.charAt(0);
+            
+            try {
+                // 如果有数据库连接，尝试获取实际的用户信息
+                if (window.supabaseClient && window.databaseInitialized) {
+                    // 获取用户信息
+                    const result = await SupabaseData.getUserByUsername(username);
+                    if (result.success) {
+                        displayName = result.data.display_name || result.data.username;
+                        userAvatar = displayName.charAt(0);
+                    }
+                }
+            } catch (error) {
+                console.warn('获取用户信息失败:', error);
+                // 使用传入的用户名作为默认值
+            }
+            
+            // 优先使用"杨多棒"作为显示名称
+            displayName = '杨多棒';
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="user-info">
+                            <div class="avatar" style="width: 60px; height: 60px;">${displayName.charAt(0)}</div>
+                            <div>
+                                <h3>${displayName}</h3>
+                                <span>宠物爱好者</span>
+                            </div>
+                        </div>
+                        <button class="close-btn">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <p>${displayName} 是一位热爱宠物的用户，拥有丰富的养宠经验。</p>
+                        </div>
+                        <div style="display: flex; justify-content: space-around; text-align: center;">
+                            <div>
+                                <h4>3</h4>
+                                <p>宠物数量</p>
+                            </div>
+                            <div>
+                                <h4>28</h4>
+                                <p>动态数量</p>
+                            </div>
+                            <div>
+                                <h4>156</h4>
+                                <p>获赞数</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="close-btn">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            modal.style.display = 'block';
+            
+            const closeBtns = modal.querySelectorAll('.close-btn');
+            closeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            });
+            
+            // 点击外部关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // 等待数据库连接完成的函数
+        async function waitForDatabaseConnection(maxWaitTime = 5000) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                const checkConnection = () => {
+                    if (window.supabaseClient && window.databaseInitialized) {
+                        console.log('数据库连接已就绪');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    const currentTime = Date.now();
+                    if (currentTime - startTime > maxWaitTime) {
+                        console.warn('数据库连接超时');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(checkConnection, 100);
+                };
+                
+                checkConnection();
+            });
+        }
+
+        // 同城动态页面特定功能
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('开始初始化同城动态页面...');
+            
+            // 首先调用Supabase初始化
+            await initPageSupabase();
+            
+            // 等待数据库连接完成
+            const dbReady = await waitForDatabaseConnection();
+            
+            if (!dbReady) {
+                console.warn('数据库连接失败，使用模拟数据');
+                // 可以在这里添加回退到模拟数据的逻辑
+            } else {
+                // 从数据库加载动态
+                await loadPostsFromDatabase();
+            }
+            
+            // 初始化页面事件
+            initPostEvents();
+            
+            console.log('同城动态页面初始化完成');
+        });
+
+        // 从数据库加载动态
+        async function loadPostsFromDatabase() {
+            try {
+                console.log('开始从数据库加载动态...');
+                
+                // 显示加载状态
+                const feedList = document.querySelector('.feed-list');
+                feedList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 2rem;"></i>
+                        <p style="margin-top: 1rem;">正在加载动态...</p>
+                    </div>
+                `;
+                
+                // 获取动态数据
+                const result = await SupabaseData.getPosts();
+                
+                if (result.success && result.data) {
+                    console.log('获取到动态数据:', result.data);
+                    renderPosts(result.data);
+                } else {
+                    console.error('获取动态数据失败:', result.error);
+                    showLoadError('加载动态失败: ' + (result.error || '未知错误'));
+                }
+            } catch (error) {
+                console.error('加载动态时发生异常:', error);
+                showLoadError('加载动态时发生异常: ' + error.message);
+            }
+        }
+
+        // 渲染动态列表
+        function renderPosts(posts) {
+            const feedList = document.querySelector('.feed-list');
+            
+            if (!posts || posts.length === 0) {
+                feedList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: var(--text-light);">
+                        <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                        <p>暂无动态，快来发布第一条动态吧！</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            posts.forEach(post => {
+                // 处理时间显示
+                const postTime = formatPostTime(post.created_at);
+                
+                // 处理标签
+                let tagsHtml = '';
+                if (post.tags) {
+                    // 如果tags是JSONB格式
+                    if (typeof post.tags === 'object') {
+                        tagsHtml = Object.values(post.tags).map(tag => 
+                            `<span class="tag">#${tag}</span>`
+                        ).join('');
+                    } 
+                    // 如果tags是逗号分隔的字符串
+                    else if (typeof post.tags === 'string') {
+                        tagsHtml = post.tags.split(',').map(tag => 
+                            `<span class="tag">#${tag.trim()}</span>`
+                        ).join('');
+                    }
+                }
+                
+                // 用户信息
+                const username = post.users?.username || '匿名用户';
+                const displayName = post.users?.display_name || username;
+                const userAvatar = displayName.charAt(0);
+                
+                // 已移除宠物信息
+                
+                html += `
+                    <div class="feed-item">
+                        <div class="post-header">
+                            <div class="user-info">
+                                <div class="avatar">${userAvatar}</div>
+                                <div class="user-details">
+                                    <span class="username">${displayName}</span>
+                                    <!-- 已移除宠物名称 -->
+                                </div>
+                            </div>
+                            <span class="post-time">${postTime}</span>
+                        </div>
+                        
+                        <div class="post-content">
+                            <p>${post.content}</p>
+                            ${tagsHtml ? `<div class="post-tags">${tagsHtml}</div>` : ''}
+                        </div>
+                        
+                        <div class="post-meta">
+                            <span><i class="fas fa-map-marker-alt"></i> ${post.location || '未知位置'}</span>
+                            <span><i class="fas fa-comments"></i> ${post.comment_count || 0}条评论</span>
+                        </div>
+                        
+                        <!-- 已移除点赞、评论和分享功能 -->
+                    </div>
+                `;
+            });
+            
+            feedList.innerHTML = html;
+            
+            // 重新绑定事件
+            bindPostEvents();
+        }
+
+        // 格式化时间显示
+        function formatPostTime(created_at) {
+            if (!created_at) return '未知时间';
+            
+            const postDate = new Date(created_at);
+            const now = new Date();
+            const diff = now - postDate;
+            
+            // 计算时间差
+            const minutes = Math.floor(diff / (1000 * 60));
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (minutes < 1) {
+                return '刚刚';
+            } else if (minutes < 60) {
+                return `${minutes}分钟前`;
+            } else if (hours < 24) {
+                return `${hours}小时前`;
+            } else if (days < 30) {
+                return `${days}天前`;
+            } else {
+                return postDate.toLocaleDateString('zh-CN');
+            }
+        }
+
+        // 显示加载错误
+        function showLoadError(message) {
+            const feedList = document.querySelector('.feed-list');
+            feedList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #f44336;">
+                    <i class="fas fa-exclamation-circle" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <p>${message}</p>
+                    <button class="action-btn" onclick="loadPostsFromDatabase()" style="margin-top: 1rem;">
+                        <i class="fas fa-redo"></i>
+                        重新加载
+                    </button>
+                </div>
+            `;
+        }
+
+        // 重新绑定动态项事件
+        function bindPostEvents() {
+            // 已移除点赞、评论和分享按钮引用
+            const feedItems = document.querySelectorAll('.feed-item');
+            
+            // 已移除点赞、评论和分享功能
+            
+            // 动态项点击功能
+            feedItems.forEach(item => {
+                // 点击动态内容查看详情
+                const content = item.querySelector('.post-content');
+                content.addEventListener('click', function(e) {
+                    if (!e.target.closest('.tag') && !e.target.closest('.post-actions')) {
+                        const username = item.querySelector('.username').textContent;
+                        PawPals.showToast(`查看 ${username} 的动态详情`);
+                        showPostDetailModal(item);
+                    }
+                });
+                
+                // 用户头像和名称点击查看用户信息
+                const userInfo = item.querySelector('.user-info');
+                userInfo.addEventListener('click', async function(e) {
+                    e.stopPropagation();
+                    const username = item.querySelector('.username').textContent;
+                    PawPals.showToast(`查看 ${username} 的个人主页`);
+                    await showUserProfileModal(username);
+                });
+            });
+        }
+
+        // 初始化页面事件
+        function initPostEvents() {
+            const newPostBtn = document.querySelector('.new-post-btn');
+            const modal = document.getElementById('postModal');
+            const closeBtn = document.querySelector('.close-btn');
+            const cancelBtn = document.querySelector('.cancel-btn');
+            const submitBtn = document.querySelector('.submit-btn');
+            const tagInput = document.getElementById('tagInput');
+            let selectedTags = [];
+            
+            // 标签输入功能
+            function updateSelectedTags() {
+                const container = document.querySelector('.selected-tags');
+                container.innerHTML = selectedTags.map(tag => 
+                    `<span class="tag">${tag}<i class="fas fa-times" onclick="removeTag('${tag}')"></i></span>`
+                ).join('');
+            }
+            
+            window.removeTag = function(tag) {
+                selectedTags = selectedTags.filter(t => t !== tag);
+                updateSelectedTags();
+            };
+            
+            // 标签输入功能
+            if (tagInput) {
+                tagInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const tag = this.value.trim();
+                        if (tag && selectedTags.length < 5) {
+                            selectedTags.push(tag);
+                            this.value = '';
+                            updateSelectedTags();
+                        }
+                    }
+                });
+            }
+
+            // 发布动态模态框控制
+            newPostBtn.addEventListener('click', function() {
+                modal.style.display = 'block';
+            });
+
+            function closeModal() {
+                modal.style.display = 'none';
+                document.getElementById('postForm').reset();
+                selectedTags = [];
+                updateSelectedTags();
+            }
+
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+
+            // 点击模态框外部关闭
+            window.addEventListener('click', function(event) {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            });
+
+            // 发布动态
+            submitBtn.addEventListener('click', async function() {
+                const content = document.getElementById('postContent').value;
+                const location = document.getElementById('location').value;
+                if (!content.trim()) {
+                    PawPals.showToast('请输入动态内容');
+                    return;
+                }
+                
+                // 添加加载状态
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = '发布中...';
+                
+                try {
+                    // 保存到数据库
+                    const success = await savePostToDatabase(content, location, selectedTags);
+                    
+                    if (success) {
+                        PawPals.showToast('动态发布成功！');
+                        // 重新加载动态列表
+                        await loadPostsFromDatabase();
+                        closeModal();
+                    } else {
+                        // 错误信息已经在savePostToDatabase中显示，这里不再重复显示
+                        console.log('动态发布失败，但没有显示具体错误信息');
+                    }
+                } catch (error) {
+                    console.error('发布动态时发生异常:', error);
+                    PawPals.showToast('发布动态时发生异常: ' + error.message);
+                } finally {
+                    // 恢复按钮状态
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

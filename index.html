@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawPals - 宠物社交平台</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- 引入Supabase SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <i class="fas fa-paw"></i>
+                <span>PawPals</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link active"><i class="fas fa-home"></i> 首页</a></li>
+                <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
+                <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
+                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- 平台特色区 -->
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">平台特色</h2>
+            <div class="features-grid">
+                <div class="feature-card pet-profile">
+                    <div class="feature-icon">
+                        <i class="fas fa-id-card-alt"></i>
+                    </div>
+                    <h3>宠物档案</h3>
+                    <p>记录宠物成长点滴，完整管理健康信息</p>
+                </div>
+                <div class="feature-card community">
+                    <div class="feature-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>同城社交</h3>
+                    <p>发现身边宠物好友，分享养宠乐趣</p>
+                </div>
+                <div class="feature-card community">
+                    <div class="feature-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>养宠分享</h3>
+                    <p>分享养宠经验心得，交流成长故事</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 同城热门动态 -->
+    <section class="hot-trends">
+        <div class="container">
+            <h2 class="section-title">同城热门动态</h2>
+            <div class="trends-grid">
+                <div class="trend-card">
+                    <div class="user-info">
+                        <div class="avatar">C</div>
+                        <div class="user-details">
+                            <span class="username">陈小喵</span>
+                            <span class="pet-name">金毛·多多</span>
+                        </div>
+                    </div>
+                    <div class="trend-content">
+                        <p>今天带多多去公园散步，遇到了好多小伙伴，玩得可开心了！</p>
+                        <div class="tags">
+                            <span class="tag">#活泼</span>
+                            <span class="tag">#社交</span>
+                        </div>
+                    </div>
+                    <div class="trend-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> 上海市中心公园</span>
+                        <span><i class="far fa-clock"></i> 2小时前</span>
+                    </div>
+                </div>
+
+                <div class="trend-card">
+                    <div class="user-info">
+                        <div class="avatar">L</div>
+                        <div class="user-details">
+                            <span class="username">刘小花</span>
+                            <span class="pet-name">波斯猫·棉花糖</span>
+                        </div>
+                    </div>
+                    <div class="trend-content">
+                        <p>棉花糖今天生日！买了它最喜欢的猫罐头，还添置了新玩具</p>
+                        <div class="tags">
+                            <span class="tag">#生日</span>
+                            <span class="tag">#可爱</span>
+                        </div>
+                    </div>
+                    <div class="trend-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> 北京市海淀区</span>
+                        <span><i class="far fa-clock"></i> 5小时前</span>
+                    </div>
+                </div>
+
+                <div class="trend-card">
+                    <div class="user-info">
+                        <div class="avatar">W</div>
+                        <div class="user-details">
+                            <span class="username">王汪汪</span>
+                            <span class="pet-name">柯基·豆豆</span>
+                        </div>
+                    </div>
+                    <div class="trend-content">
+                        <p>豆豆今天学会了新技能，会按铃要饭了！聪明的小家伙</p>
+                        <div class="tags">
+                            <span class="tag">#聪明</span>
+                            <span class="tag">#训练</span>
+                        </div>
+                    </div>
+                    <div class="trend-meta">
+                        <span><i class="fas fa-map-marker-alt"></i> 广州市天河区</span>
+                        <span><i class="far fa-clock"></i> 1天前</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 快速入口 -->
+    <section class="quick-actions">
+        <div class="container">
+            <h2 class="section-title">快速开始</h2>
+            <div class="actions-grid">
+                <button class="action-btn primary">
+                    <i class="fas fa-plus"></i>
+                    <span>创建宠物档案</span>
+                </button>
+                <button class="action-btn secondary">
+                    <i class="fas fa-edit"></i>
+                    <span>发布动态</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>关于我们</h3>
+                    <p>PawPals 致力于为宠物主人提供全方位的社交和服务平台</p>
+                </div>
+                <div class="footer-section">
+                    <h3>联系方式</h3>
+                    <p>邮箱：contact@pawpals.com</p>
+                    <p>电话：400-123-4567</p>
+                </div>
+                <div class="footer-section">
+                    <h3>隐私政策</h3>
+                    <p>我们严格保护用户隐私，确保信息安全</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 PawPals. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 引入Supabase配置和功能 -->
+    <script src="supabase-config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
