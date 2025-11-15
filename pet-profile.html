@@ -19,7 +19,7 @@
                 <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
                 <li><a href="pet-profile.html" class="nav-link active"><i class="fas fa-id-card"></i> 宠物档案</a></li>
                 <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
-                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+                <li><a href="auth.html" class="nav-link" id="authLink"><i class="fas fa-user"></i> 登录/注册</a></li>
             </ul>
         </div>
     </nav>
@@ -127,6 +127,46 @@
             });
         }
         
+        // 检查用户是否已登录
+        async function checkUserLoggedIn() {
+            if (!window.supabaseClient) {
+                console.warn('Supabase客户端未初始化');
+                return null;
+            }
+            
+            try {
+                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                
+                return user;
+            } catch (error) {
+                console.error('检查用户登录状态时发生异常:', error);
+                return null;
+            }
+        }
+        
+        // 更新导航栏显示已登录用户信息
+        function updateNavbarForLoggedInUser(user) {
+            const authLink = document.querySelector('.nav-menu a[href="auth.html"]');
+            if (authLink) {
+                // 获取用户名（优先使用display_name，否则使用email前缀）
+                const username = user.user_metadata?.display_name || 
+                                user.email?.split('@')[0] || 
+                                '用户';
+                
+                authLink.innerHTML = `<i class="fas fa-user"></i> ${username}`;
+                authLink.href = '#';
+                authLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // 可以在这里添加用户菜单或个人页面链接
+                    alert(`欢迎，${username}！`);
+                });
+            }
+        }
+        
         // 宠物档案页面特定功能
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('初始化宠物档案页面...');
@@ -149,35 +189,24 @@
             // 初始化页面事件（但宠物卡片事件将在宠物列表渲染后单独绑定）
             initPetProfileEvents();
             
-            // 检查用户是否登录
-            try {
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                if (user) {
-                    console.log('用户已登录，加载宠物列表');
-                    // 如果用户已登录，加载用户宠物列表
-                    await loadPetList(user.id);
-                } else {
-                    console.log('用户未登录，显示登录提示');
-                    // 用户未登录，显示提示信息
-                    showLoginPrompt();
-                    // 显示空的宠物详情
-                    renderPetDetail(null);
-                    document.getElementById('timeline-container').innerHTML = `
-                        <div style="text-align: center; padding: 2rem; color: var(--text-light);">
-                            <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                            <p>请登录后查看成长记录</p>
-                        </div>
-                    `;
-                }
-            } catch (error) {
-                console.error('用户认证检查失败:', error);
-                showErrorState('用户认证失败，请刷新页面重试');
+            // 检查用户是否已登录
+            const user = await checkUserLoggedIn();
+            if (user) {
+                console.log('用户已登录，加载宠物列表');
+                // 更新导航栏显示用户信息
+                updateNavbarForLoggedInUser(user);
+                // 如果用户已登录，加载用户宠物列表
+                await loadPetList(user.id);
+            } else {
+                console.log('用户未登录，显示登录提示');
+                // 用户未登录，显示提示信息
+                showLoginPrompt();
                 // 显示空的宠物详情
                 renderPetDetail(null);
                 document.getElementById('timeline-container').innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: var(--text-light);">
                         <i class="fas fa-history" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-                        <p>无法加载成长记录</p>
+                        <p>请登录后查看成长记录</p>
                     </div>
                 `;
             }

@@ -25,7 +25,7 @@
                 <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
                 <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
                 <li><a href="community.html" class="nav-link active"><i class="fas fa-users"></i> 同城动态</a></li>
-                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+                <li><a href="auth.html" class="nav-link" id="authLink"><i class="fas fa-user"></i> 登录/注册</a></li>
             </ul>
         </div>
     </nav>
@@ -515,29 +515,70 @@ CREATE TABLE IF NOT EXISTS posts (
         }
 
         // 等待数据库连接完成的函数
-        async function waitForDatabaseConnection(maxWaitTime = 5000) {
+        async function waitForDatabaseConnection(maxWaitTime = 8000) {
             return new Promise((resolve) => {
                 const startTime = Date.now();
                 
                 const checkConnection = () => {
-                    if (window.supabaseClient && window.databaseInitialized) {
-                        console.log('数据库连接已就绪');
+                    if (window.supabaseClient && window.databaseInitialized === true) {
+                        console.log('✅ 数据库连接已就绪，supabaseClient可用');
                         resolve(true);
                         return;
                     }
                     
-                    const currentTime = Date.now();
-                    if (currentTime - startTime > maxWaitTime) {
-                        console.warn('数据库连接超时');
+                    if (Date.now() - startTime > maxWaitTime) {
+                        console.warn('⚠️ 等待数据库连接超时，将显示错误状态');
+                        console.log('当前状态 - supabaseClient:', window.supabaseClient ? '已定义' : '未定义');
+                        console.log('当前状态 - databaseInitialized:', window.databaseInitialized);
                         resolve(false);
                         return;
                     }
                     
-                    setTimeout(checkConnection, 100);
+                    setTimeout(checkConnection, 200);
                 };
                 
                 checkConnection();
             });
+        }
+        
+        // 检查用户是否已登录
+        async function checkUserLoggedIn() {
+            if (!window.supabaseClient) {
+                console.warn('Supabase客户端未初始化');
+                return null;
+            }
+            
+            try {
+                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                
+                return user;
+            } catch (error) {
+                console.error('检查用户登录状态时发生异常:', error);
+                return null;
+            }
+        }
+        
+        // 更新导航栏显示已登录用户信息
+        function updateNavbarForLoggedInUser(user) {
+            const authLink = document.querySelector('.nav-menu a[href="auth.html"]');
+            if (authLink) {
+                // 获取用户名（优先使用display_name，否则使用email前缀）
+                const username = user.user_metadata?.display_name || 
+                                user.email?.split('@')[0] || 
+                                '用户';
+                
+                authLink.innerHTML = `<i class="fas fa-user"></i> ${username}`;
+                authLink.href = '#';
+                authLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // 可以在这里添加用户菜单或个人页面链接
+                    alert(`欢迎，${username}！`);
+                });
+            }
         }
 
         // 同城动态页面特定功能
@@ -551,12 +592,23 @@ CREATE TABLE IF NOT EXISTS posts (
             const dbReady = await waitForDatabaseConnection();
             
             if (!dbReady) {
-                console.warn('数据库连接失败，使用模拟数据');
-                // 可以在这里添加回退到模拟数据的逻辑
-            } else {
-                // 从数据库加载动态
-                await loadPostsFromDatabase();
+                console.log('数据库连接失败，显示错误提示');
+                showDatabaseError();
+                return;
             }
+            
+            // 检查用户是否已登录
+            const user = await checkUserLoggedIn();
+            if (user) {
+                console.log('用户已登录:', user.email);
+                // 更新导航栏显示用户信息
+                updateNavbarForLoggedInUser(user);
+            } else {
+                console.log('用户未登录或会话已过期');
+            }
+            
+            // 从数据库加载动态
+            await loadPostsFromDatabase();
             
             // 初始化页面事件
             initPostEvents();
@@ -708,6 +760,22 @@ CREATE TABLE IF NOT EXISTS posts (
                     <button class="action-btn" onclick="loadPostsFromDatabase()" style="margin-top: 1rem;">
                         <i class="fas fa-redo"></i>
                         重新加载
+                    </button>
+                </div>
+            `;
+        }
+        
+        // 显示数据库连接错误
+        function showDatabaseError() {
+            const feedList = document.querySelector('.feed-list');
+            feedList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: #f44336;">
+                    <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                    <h3>数据库连接失败</h3>
+                    <p>无法连接到数据库，请检查网络连接或稍后重试</p>
+                    <button class="action-btn" onclick="location.reload()" style="margin-top: 1rem;">
+                        <i class="fas fa-redo"></i>
+                        重新加载页面
                     </button>
                 </div>
             `;

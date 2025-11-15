@@ -386,7 +386,8 @@ async function initializeSupabase() {
             auth: {
                 autoRefreshToken: true,
                 persistSession: true,
-                detectSessionInUrl: true
+                detectSessionInUrl: true,
+                storageKey: 'pawpals-auth-token'  // 自定义存储键名
             }
         });
         

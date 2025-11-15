@@ -17,11 +17,11 @@
                 <i class="fas fa-paw"></i>
                 <span>PawPals</span>
             </div>
-            <ul class="nav-menu">
+            <ul class="nav-menu" id="navMenu">
                 <li><a href="index.html" class="nav-link active"><i class="fas fa-home"></i> 首页</a></li>
                 <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
                 <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
-                <li><a href="auth.html" class="nav-link"><i class="fas fa-user"></i> 登录/注册</a></li>
+                <li><a href="auth.html" class="nav-link" id="authLink"><i class="fas fa-user"></i> 登录/注册</a></li>
             </ul>
         </div>
     </nav>
@@ -171,5 +171,94 @@
     <!-- 引入Supabase配置和功能 -->
     <script src="supabase-config.js"></script>
     <script src="script.js"></script>
+    <script>
+        // 等待数据库连接完成的函数
+        async function waitForDatabaseConnection(maxWaitTime = 5000) {
+            return new Promise((resolve) => {
+                const startTime = Date.now();
+                
+                const checkConnection = () => {
+                    if (window.supabaseClient && window.databaseInitialized) {
+                        console.log('数据库连接已就绪');
+                        resolve(true);
+                        return;
+                    }
+                    
+                    if (Date.now() - startTime > maxWaitTime) {
+                        console.warn('等待数据库连接超时，将使用基础功能');
+                        resolve(false);
+                        return;
+                    }
+                    
+                    setTimeout(checkConnection, 100);
+                };
+                
+                checkConnection();
+            });
+        }
+        
+        // 检查用户是否已登录
+        async function checkUserLoggedIn() {
+            if (!window.supabaseClient) {
+                console.warn('Supabase客户端未初始化');
+                return null;
+            }
+            
+            try {
+                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                
+                return user;
+            } catch (error) {
+                console.error('检查用户登录状态时发生异常:', error);
+                return null;
+            }
+        }
+        
+        // 更新导航栏显示已登录用户信息
+        function updateNavbarForLoggedInUser(user) {
+            const authLink = document.getElementById('authLink');
+            if (authLink) {
+                // 获取用户名（优先使用display_name，否则使用email前缀）
+                const username = user.user_metadata?.display_name || 
+                                user.email?.split('@')[0] || 
+                                '用户';
+                
+                authLink.innerHTML = `<i class="fas fa-user"></i> ${username}`;
+                authLink.href = '#';
+                authLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // 可以在这里添加用户菜单或个人页面链接
+                    alert(`欢迎，${username}！`);
+                });
+            }
+        }
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 首先调用Supabase初始化
+            await initPageSupabase();
+            
+            // 等待数据库连接完成
+            const dbReady = await waitForDatabaseConnection();
+            
+            if (!dbReady) {
+                console.log('数据库连接失败，将使用基础功能');
+            }
+            
+            // 检查用户是否已登录
+            const user = await checkUserLoggedIn();
+            if (user) {
+                console.log('用户已登录:', user.email);
+                // 更新导航栏显示用户信息
+                updateNavbarForLoggedInUser(user);
+            } else {
+                console.log('用户未登录');
+            }
+        });
+    </script>
 </body>
 </html>

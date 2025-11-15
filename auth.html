@@ -22,7 +22,7 @@
                 <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
                 <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
                 <li><a href="#" class="nav-link"><i class="fas fa-search"></i> 服务查询</a></li>
-                <li><a href="auth.html" class="nav-link active"><i class="fas fa-user"></i> 登录/注册</a></li>
+                <li><a href="auth.html" class="nav-link active" id="authLink"><i class="fas fa-user"></i> 登录/注册</a></li>
             </ul>
         </div>
     </nav>
@@ -193,6 +193,46 @@
             });
         }
         
+        // 检查用户是否已登录
+        async function checkUserLoggedIn() {
+            if (!window.supabaseClient) {
+                console.warn('Supabase客户端未初始化');
+                return null;
+            }
+            
+            try {
+                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                if (error) {
+                    console.error('获取用户信息失败:', error);
+                    return null;
+                }
+                
+                return user;
+            } catch (error) {
+                console.error('检查用户登录状态时发生异常:', error);
+                return null;
+            }
+        }
+        
+        // 更新导航栏显示已登录用户信息
+        function updateNavbarForLoggedInUser(user) {
+            const authLink = document.querySelector('.nav-menu a[href="auth.html"]');
+            if (authLink) {
+                // 获取用户名（优先使用display_name，否则使用email前缀）
+                const username = user.user_metadata?.display_name || 
+                                user.email?.split('@')[0] || 
+                                '用户';
+                
+                authLink.innerHTML = `<i class="fas fa-user"></i> ${username}`;
+                authLink.href = '#';
+                authLink.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // 可以在这里添加用户菜单或个人页面链接
+                    alert(`欢迎，${username}！`);
+                });
+            }
+        }
+        
         // 认证页面特定功能
         document.addEventListener('DOMContentLoaded', async function() {
             // 首先调用Supabase初始化
@@ -203,6 +243,16 @@
             
             if (!dbReady) {
                 console.log('数据库连接失败，将使用基础功能');
+            }
+            
+            // 检查用户是否已登录，如果已登录则重定向到首页
+            const user = await checkUserLoggedIn();
+            if (user) {
+                console.log('用户已登录，重定向到首页');
+                // 更新导航栏显示用户信息
+                updateNavbarForLoggedInUser(user);
+                window.location.href = 'index.html';
+                return;
             }
             const tabBtns = document.querySelectorAll('.tab-btn');
             const tabContents = document.querySelectorAll('.tab-content');
