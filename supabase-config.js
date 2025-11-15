@@ -647,9 +647,10 @@ class SupabaseData {
                 return { success: true, data: [] };
             }
 
-            // 获取相关的用户和宠物信息
+            // 获取相关的用户信息
             const userIds = [...new Set(postsData.map(post => post.user_id).filter(id => id))];
-            const petIds = [...new Set(postsData.map(post => post.pet_id).filter(id => id))];
+            
+            // 注意：posts表中没有pet_id字段，因此不获取宠物信息
 
             // 获取用户信息
             let usersData = [];
@@ -664,24 +665,12 @@ class SupabaseData {
                 }
             }
 
-            // 获取宠物信息
-            let petsData = [];
-            if (petIds.length > 0) {
-                const { data: fetchedPets, error: petsError } = await supabaseClient
-                    .from('pets')
-                    .select('id, name, pet_type, avatar_color')
-                    .in('id', petIds);
-                
-                if (!petsError) {
-                    petsData = fetchedPets;
-                }
-            }
+            // 已移除宠物信息获取（posts表中没有pet_id字段）
 
             // 合并数据
             const data = postsData.map(post => ({
                 ...post,
-                users: usersData.find(user => user.id === post.user_id) || null,
-                pets: petsData.find(pet => pet.id === post.pet_id) || null
+                users: usersData.find(user => user.id === post.user_id) || null
             }));
 
             return { success: true, data };
