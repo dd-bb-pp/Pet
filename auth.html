@@ -21,7 +21,6 @@
                 <li><a href="index.html" class="nav-link"><i class="fas fa-home"></i> 首页</a></li>
                 <li><a href="pet-profile.html" class="nav-link"><i class="fas fa-id-card"></i> 宠物档案</a></li>
                 <li><a href="community.html" class="nav-link"><i class="fas fa-users"></i> 同城动态</a></li>
-                <li><a href="#" class="nav-link"><i class="fas fa-search"></i> 服务查询</a></li>
                 <li><a href="auth.html" class="nav-link active" id="authLink"><i class="fas fa-user"></i> 登录/注册</a></li>
             </ul>
         </div>
@@ -228,8 +227,35 @@
                 authLink.addEventListener('click', function(e) {
                     e.preventDefault();
                     // 可以在这里添加用户菜单或个人页面链接
-                    alert(`欢迎，${username}！`);
+                    if (typeof alert !== 'undefined') {
+                        alert(`欢迎，${username}！`);
+                    }
                 });
+            }
+        }
+        
+        // 显示连接诊断信息
+        function showConnectionDiagnostics() {
+            // 在控制台显示详细的诊断信息
+            console.log('=== 数据库连接诊断 ===');
+            console.log('当前时间:', new Date().toISOString());
+            console.log('Supabase客户端状态:', window.supabaseClient ? '已初始化' : '未初始化');
+            console.log('数据库初始化状态:', window.databaseInitialized);
+            
+            if (window.supabaseClient) {
+                console.log('Supabase URL:', window.supabaseClient.supabaseUrl);
+            }
+            
+            // 显示页面URL信息
+            if (typeof window !== 'undefined' && window.location) {
+                console.log('当前页面URL:', window.location.href);
+                console.log('页面协议:', window.location.protocol);
+                console.log('页面域名:', window.location.hostname);
+            }
+            
+            // 提示用户查看控制台
+            if (typeof alert !== 'undefined') {
+                alert('请打开浏览器开发者工具（F12），查看控制台中的详细诊断信息。');
             }
         }
         
@@ -242,7 +268,15 @@
             const dbReady = await waitForDatabaseConnection();
             
             if (!dbReady) {
-                console.log('数据库连接失败，将使用基础功能');
+                console.error('❌ 数据库连接失败');
+                console.log('💡 可能的原因：');
+                console.log('  1. 网络连接问题');
+                console.log('  2. Supabase服务暂时不可用');
+                console.log('  3. 部署环境的CORS限制');
+                console.log('  4. API密钥配置问题');
+                
+                // 显示用户友好的错误信息
+                PawPals.showToast('数据库连接失败，请检查网络连接或稍后重试', 'error');
             }
             
             // 检查用户是否已登录，如果已登录则重定向到首页

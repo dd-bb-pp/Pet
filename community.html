@@ -768,17 +768,79 @@ CREATE TABLE IF NOT EXISTS posts (
         // 显示数据库连接错误
         function showDatabaseError() {
             const feedList = document.querySelector('.feed-list');
+            
+            // 检查是否是部署环境
+            const isDeployed = typeof window !== 'undefined' && 
+                             window.location.hostname !== 'localhost' && 
+                             window.location.hostname !== '127.0.0.1' &&
+                             !window.location.hostname.startsWith('192.168.');
+            
+            let additionalInfo = '';
+            if (isDeployed) {
+                additionalInfo = `
+                    <div style="margin-top: 1rem; padding: 1rem; background: #fff3cd; border-radius: 4px; border: 1px solid #ffeaa7;">
+                        <h4 style="margin-top: 0; color: #856404;">💡 部署环境解决方案</h4>
+                        <p style="margin-bottom: 0.5rem;">请按以下步骤解决：</p>
+                        <ol style="text-align: left; margin-left: 1.5rem;">
+                            <li>登录Supabase仪表板</li>
+                            <li>进入Project Settings > API</li>
+                            <li>在"Allowed URLs"部分添加当前部署URL: <strong>${window.location.origin}</strong></li>
+                            <li>保存更改并重新部署应用</li>
+                        </ol>
+                    </div>
+                `;
+            }
+            
             feedList.innerHTML = `
                 <div style="text-align: center; padding: 2rem; color: #f44336;">
                     <i class="fas fa-database" style="font-size: 3rem; margin-bottom: 1rem;"></i>
                     <h3>数据库连接失败</h3>
                     <p>无法连接到数据库，请检查网络连接或稍后重试</p>
+                    <div style="margin-top: 1rem; font-size: 0.9rem; color: #666;">
+                        <p>可能的原因：</p>
+                        <ul style="text-align: left; display: inline-block;">
+                            <li>网络连接问题</li>
+                            <li>Supabase服务暂时不可用</li>
+                            <li>${isDeployed ? '部署环境的CORS限制' : 'CORS限制'}</li>
+                            <li>API密钥配置问题</li>
+                        </ul>
+                    </div>
+                    ${additionalInfo}
                     <button class="action-btn" onclick="location.reload()" style="margin-top: 1rem;">
                         <i class="fas fa-redo"></i>
                         重新加载页面
                     </button>
+                    <button class="action-btn" onclick="showConnectionDiagnostics()" style="margin-top: 1rem; margin-left: 10px; background: #ff9800;">
+                        <i class="fas fa-bug"></i>
+                        诊断连接问题
+                    </button>
                 </div>
             `;
+        }
+        
+        // 显示连接诊断信息
+        function showConnectionDiagnostics() {
+            // 在控制台显示详细的诊断信息
+            console.log('=== 数据库连接诊断 ===');
+            console.log('当前时间:', new Date().toISOString());
+            console.log('Supabase客户端状态:', window.supabaseClient ? '已初始化' : '未初始化');
+            console.log('数据库初始化状态:', window.databaseInitialized);
+            
+            if (window.supabaseClient) {
+                console.log('Supabase URL:', window.supabaseClient.supabaseUrl);
+            }
+            
+            // 显示页面URL信息
+            if (typeof window !== 'undefined' && window.location) {
+                console.log('当前页面URL:', window.location.href);
+                console.log('页面协议:', window.location.protocol);
+                console.log('页面域名:', window.location.hostname);
+            }
+            
+            // 提示用户查看控制台
+            if (typeof alert !== 'undefined') {
+                alert('请打开浏览器开发者工具（F12），查看控制台中的详细诊断信息。');
+            }
         }
 
         // 重新绑定动态项事件
