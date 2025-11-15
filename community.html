@@ -603,12 +603,15 @@ CREATE TABLE IF NOT EXISTS posts (
                 console.log('用户已登录:', user.email);
                 // 更新导航栏显示用户信息
                 updateNavbarForLoggedInUser(user);
+                
+                // 从数据库加载动态
+                await loadPostsFromDatabase();
             } else {
                 console.log('用户未登录或会话已过期');
+                // 用户未登录，显示登录提示
+                showLoginPrompt();
             }
-            
-            // 从数据库加载动态
-            await loadPostsFromDatabase();
+
             
             // 初始化页面事件
             initPostEvents();
@@ -763,6 +766,27 @@ CREATE TABLE IF NOT EXISTS posts (
                     </button>
                 </div>
             `;
+        }
+        
+        // 显示登录提示
+        function showLoginPrompt() {
+            const feedList = document.querySelector('.feed-list');
+            if (feedList) {
+                feedList.innerHTML = `
+                    <div class="login-prompt" style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-users" style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary-color);"></i>
+                        <h3>请登录查看同城动态</h3>
+                        <p>登录后可以查看其他宠物主人分享的精彩动态</p>
+                        <button class="primary-btn" onclick="window.location.href='auth.html'" style="margin-top: 1rem;">
+                            <i class="fas fa-sign-in-alt"></i>
+                            立即登录
+                        </button>
+                        <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-light);">
+                            还没有账户？<a href="auth.html#register" style="color: var(--primary-color);">立即注册</a>
+                        </p>
+                    </div>
+                `;
+            }
         }
         
         // 显示数据库连接错误
